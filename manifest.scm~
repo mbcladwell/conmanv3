@@ -1,0 +1,3 @@
+(specifications->manifest
+		'("guile@3.0.2" "guile-lib"   "coreutils" "gawk" "sed" "findutils" "glibc" "grep" "bash-minimal" "openssl" "gnutls" "curl" "guile-dbi-mysql@2.1.6" "glibc-locales" "glibc-utf8-locales" ))
+

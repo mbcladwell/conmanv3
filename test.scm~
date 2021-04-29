@@ -1,0 +1,93 @@
+#!/gnu/store/q8brh7j5mwy0hbrly6hjb1m3wwndxqc8-guile-3.0.5/bin/guile \
+-e main -s
+!#
+
+ (add-to-load-path "/home/mbc/projects")
+
+
+(("33851871"
+  .
+  #<<reference> pmid: "33851871" journal: "Environmental health perspectives" title: "Assessing Indoor Dust Interference with Human Nuclear Hormone Receptors in Cell-Based Luciferase Reporter Assays.">)
+ ("33854174"
+  .
+  #<<reference> pmid: "33854174" journal: "Scientific reports" title: "Identification and functional analysis of a biflavone as a novel inhibitor of transient receptor potential vanilloid 4-dependent atherogenic processes.">))
+
+;;this is a summary
+((("33854174")
+  ("Alharbi MO"
+   "Dutta B"
+   "Goswami R"
+   "Sharma S"
+   "Lei KY"
+   "Rahaman SO"))
+ (("33851871")
+  ("Young AS"
+   "Zoeller T"
+   "Hauser R"
+   "James-Todd T"
+   "Coull BA"
+   "Behnisch PA"
+   "Brouwer A"
+   "Zhu H"
+   "Kannan K"
+   "Allen JG")))
+
+
+(define b '(("1"
+  "College of Water Resources and Civil Engineering, China Agricultural University, Beijing 100083, China."
+  "null")
+ ("2"
+  "Department of Civil and Environmental Engineering and Andlinger Center for Energy and the Environment, Princeton University, Princeton, NJ, 08544, United States."
+  "null")
+ ("3"
+  "Genetics and Sustainable Agricultural Research Unit, United States Department of Agriculture, Starkville, MS 39762, USA."
+  "null")
+ ("4"
+  "Advanced Water Management Centre, University of Queensland, Brisbane, QLD 4072, Australia."
+  "null")
+ ("5"
+  "College of Water Resources and Civil Engineering, China Agricultural University, Beijing 100083, China. "
+  "yunkai@cau.edu")))
+
+(caar b)
+(define c '())
+(set! c (acons (caar b)  (cdar b) c) )
+(assoc "1" c)
+
+
+
+
+;;(recurse-lst-add-index 1 (cadar e) '())
+
+(define f (recurse-lst-add-index 1 (cadar e) '()))
+(cdr (assoc 6 f))
+
+
+;;(pretty-print (retrieve-article "32781280"))
+(define d (retrieve-article "32781280"))
+(assoc "4" d)
+
+
+(define a (retrieve-article e))
+
+
+
+
+
+
+
+
+
+(define a "null")
+(equal? "null" a)
+
+
+(define a (retrieve-article e))
+
+(contact-firstn (car a))
+
+(define e (get-summaries "1" "1"))
+
+https://pubmed.ncbi.nlm.nih.gov/32781280/
+
+https://pubmed.ncbi.nlm.nih.gov/33865888/
