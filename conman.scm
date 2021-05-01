@@ -125,7 +125,8 @@
 
 (define (get-articles-for-auth auth)
   (let* ( (authmod (string-replace-substring auth " " "+"))
-	 (url (string-append "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=" (uri-encode authmod) "[auth]&retmax=20"))
+;;	 (url (string-append "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=" (uri-encode authmod) "[auth]&retmax=20"))
+	 (url (string-append "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=" (uri-encode authmod) "[auth]&retmax=40"))
 	 (summary-url  (uri-encode url )) 
 	 (the-body   (receive (response-status response-body)
 	 		 (http-request url) response-body))
@@ -164,11 +165,11 @@
   ;; return a list of pmids where the auth is the first or last author
   (let* ((a (get-articles-for-auth auth))
 	 (b   (map first-or-last-auth? (circular-list auth) a))
-	 (holder '())
-	 (dummy (if b (map (lambda (x y) (if x (set! holder (append! holder (list y))) #f)) b a) #f))
+;	 (holder '())
+;	 (dummy (if b (map (lambda (x y) (if x (set! holder (append! holder (list y))) #f)) b a) #f))
 	 )
- ;;   (pretty-print holder)))
-     holder))
+    (pretty-print a)))
+ ;;    holder))
 
  ;; (pretty-print (find-fl-aoi "Church G"))
  ;; (pretty-print  (get-articles-for-auth "Marjanović Ž"))
@@ -232,7 +233,9 @@
 (define (get-summaries reldate retmax)
   ;; this is the initializing method
   (let*((db "pubmed")
-	(query (string-append "96+multi+well+OR+high-throughput+screening+assay+(" (uri-encode two-weeks-ago) "[epdat])"))
+	;;(query (string-append "96+multi+well+OR+high-throughput+screening+assay+(" (uri-encode two-weeks-ago) "[epdat])"))
+	(query (string-append "96+multi+well+OR+high-throughput+screening+assay+(2021%2F04%2F14[epdat])"))
+	
 	(base "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/")
 	;; (define url (string-append base  "esearch.fcgi?db=" db "&term=" query "&usehistory=y"))
 	(url (string-append base  "esearch.fcgi?db=" db "&term=" query "&retmax=" retmax))
@@ -412,7 +415,7 @@
 
 
 (define (retrieve-article a-summary)
-  ;;output here is the list of contacts that then must be processed for missing emails
+  ;;output here is the list of contacts that have already been processed for missing emails
   (let* ((pmid (caar a-summary))
 	 (auth-list (cadr a-summary))
 	 (indexed-auth-lst (recurse-lst-add-index 1 auth-list '()))
@@ -512,15 +515,15 @@
 
 
 
-(define (make-ref-records pmid journal title results)
-;; results is the empty list to hold records
+(define (make-ref-records pmid journal title )
+;; this will fill the global ref-records
   (if (null? (cdr pmid))
       (begin
-	(set! results (acons  (car pmid) (make-reference (car pmid) (car journal) (car title)) results))
-	results)
+	(set! ref-records (acons  (car pmid) (make-reference (car pmid) (car journal) (car title)) ref-records))
+	ref-records)
       (begin
-	(set! results (acons (car pmid) (make-reference (car pmid) (car journal) (car title)) results))
-	(make-ref-records (cdr pmid) (cdr journal) (cdr title) results))))
+	(set! ref-records (acons (car pmid) (make-reference (car pmid) (car journal) (car title)) ref-records))
+	(make-ref-records (cdr pmid) (cdr journal) (cdr title) ))))
 
 
 (define (get-pmid-jrn-title x)
@@ -539,7 +542,8 @@
 	 (e  (map list-matches  (circular-list search-term) x ))
 	 (f (process-vec-journal e '()))  ;;Journals
 	 )
-    (make-ref-records b f d ref-records)))
+;;    (pretty-print f)))
+    (make-ref-records b f d )))
 
 
 
@@ -558,14 +562,14 @@
 
 
 (define (get-missing-email contacts  contacts-out)
-  ;;input: contact record with all info but maybe email is missing
+  ;;input: contact records with all info but maybe email is missing
   ;;if email is missing find it
   ;;I will also count contacts in this method
   (if (null? (cdr contacts))
       (let* ((the-contact (car contacts))
 	     (email (contact-email the-contact))
 	     (email-null?   (string=? "null" email))
-	     (deplorables '("China" "Pfizer"))
+	     (deplorables '( "Pfizer" "China"))
 	     (affil (contact-affil the-contact))
 	     (ok-affiliation? (not (any-not-false? (map string-contains-ci (circular-list affil) deplorables))))
 	     (auth-name (contact-qname the-contact))
@@ -578,7 +582,7 @@
       (let* ((the-contact (car contacts))
 	     (email (contact-email the-contact))
 	     (email-null?   (string=? "null" email))
-	     (deplorables '("China" "Pfizer"))
+	     (deplorables '( "Pfizer" "China"))
 	     (affil (contact-affil the-contact))
 	     (ok-affiliation? (not (any-not-false? (map string-contains-ci (circular-list affil) deplorables))))
 	     (auth-name (contact-qname the-contact))
@@ -642,7 +646,6 @@
 	 (a (get-summaries (cadr args) (caddr args)))
 	 (b (map retrieve-article a))
 	 (dummy (if (null? b) #f (send-email b) ))
-	 (dummy (if (null? emails-sent) #f (send-report emails-sent) ))
 	 (stop-time (current-time time-monotonic))
 	 (elapsed-time (ceiling (/ (time-second (time-difference stop-time start-time)) 60)))
 	 (dummy3 (log-msg 'INFO (string-append "Elapsed time: " (number->string   elapsed-time) " minutes.")))
@@ -650,8 +653,9 @@
 	 (dummy5 (log-msg 'INFO (string-append "Author-count: " (number->string  author-count) )))
 	 (dummy6 (log-msg 'INFO (string-append "Author-find-email-count: " (number->string  author-find-email-count) )))
 	 (dummy7 (shutdown-logging))
+	 (stats-list (list (cons "batchid" batch-id) (cons "article" (number->string article-count)) (cons "author" (number->string author-count)) (cons "author-find" (number->string author-find-email-count)) (cons "elapsed-time" (number->string elapsed-time))))
 	 ;;(stmnt (string-append "INSERT INTO conmanstats (batchid, article, author, author_search, elapsed ) VALUES ("  batch-id ", " (number->string article-count) ", " (number->string author-count) ", " (number->string author-find-email-count) ", " (number->string elapsed-time) ")"))
-	 (dummy8 (send-report (list (cons "batchid" batch-id) (cons "article" (number->string article-count)) (cons "author" (number->string author-count)) (cons "author-find" (number->string author-find-email-count)) (cons "elapsed-time" (number->string elapsed-time))) emails-sent)) 
+	 (dummy8 (send-report stats-list  emails-sent)) 
 	 )
   ;; (pretty-print b)))    
    (pretty-print (string-append "Elapsed time: " (number->string  elapsed-time) " minutes." ))))

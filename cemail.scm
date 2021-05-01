@@ -71,7 +71,7 @@
 
 (define (send-report lst alist)
   ;; lst is the stats
-  ;; alist is emails that were sent
+  ;; alist is emails that were sent, migt be null
   ;; (list (cons "firstn" firstn)(cons "email" email)) etc loop over to pull out names and emails
   (let* (
 	 (str1 (string-append "Article count: " (assoc-ref "article-count" lst) "\n"))
