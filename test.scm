@@ -9,7 +9,7 @@ https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmen&term=96+mul
 
 https://pubmed.ncbi.nlm.nih.gov/32781280/
 
-https://pubmed.ncbi.nlm.nih.gov/33865888/
+https://pubmed.ncbi.nlm.nih.gov/33906944/  ;;Church GM is last author
 
 
 (define a (get-summaries "1" "3"))
@@ -17,50 +17,10 @@ https://pubmed.ncbi.nlm.nih.gov/33865888/
 (pretty-print b)
 
 
-(define d (get-missing-email b '()))
-
-
-(define (get-missing-email contacts  contacts-out)
-  ;;input: contact records with all info but maybe email is missing
-  ;;if email is missing find it
-  ;;I will also count contacts in this method
-  (if (null? (cdr contacts))
-      (let* ((the-contact (car contacts))
-	     (email (contact-email the-contact))
-	     (email-null?   (string=? "null" email))
-	     (deplorables '( "Pfizer" "China"))
-	     (affil (contact-affil the-contact))
-	     (ok-affiliation? (not (any-not-false? (map string-contains-ci (circular-list affil) deplorables))))
-	     (auth-name (contact-qname the-contact))
-	     (new-email (if (and email-null?  ok-affiliation?) (find-email auth-name) email))
-	     (dummy (set! author-count (+ author-count 1)))
-	     (dummy (set-contact-email! the-contact new-email))
-	     (dummy (set! contacts-out (cons the-contact contacts-out)))
-	     )
-	contacts-out)
-      (let* ((the-contact (car contacts))
-	     (email (contact-email the-contact))
-	     (email-null?   (string=? "null" email))
-	     (deplorables '( "Pfizer" "China"))
-	     (affil (contact-affil the-contact))
-	     (ok-affiliation? (not (any-not-false? (map string-contains-ci (circular-list affil) deplorables))))
-	     (auth-name (contact-qname the-contact))
-	     (new-email (if (and email-null?  ok-affiliation?) (find-email auth-name) email))
-	     (dummy (set! author-count (+ author-count 1)))
-	     (dummy (set-contact-email! the-contact new-email))
-	     (dummy (set! contacts-out (cons the-contact contacts-out)))
-	     )
-	(get-missing-email (cdr contacts)  contacts-out))))
-
-
-
-(define a-contact (make-contact  "33912478" 1 "Church G" "Zhaoyang Sun"  "Zhaoyang" "Sun"  "Department of Laboratory Medicine, Huadong Hospital, Affiliated With Fudan University, Shanghai, China." "null" ))
-
-
 (get-missing-email (list a-contact) '())
 (find-email "Church GM")
 (find-fl-aoi "Church GM")
-(first-or-last-auth? "Church GM" "32753383")
+(first-or-last-auth? "Church GM" "33906944")
 (pretty-print (get-articles-for-auth "Church G"))
 
 (define arts '("33906944"
@@ -70,12 +30,40 @@ https://pubmed.ncbi.nlm.nih.gov/33865888/
  "33293535"))
 
 
-(get-articles-for-auth "Church GM")
+(define a (get-articles-for-auth "Church GM"))
+(map first-or-last-auth? (circular-list "Church GM") a)
 
-;; CHANGE # article gotten back to 20!!!!
 
-(contact-email a-contact)
+(define (retrieve-article a-summary)
+  ;;this does all the work; author list repeately processed article by article
+  ;;including send email
+  (let* ((pmid (caar a-summary))
+	 (auth-list (cadr a-summary))
+	 (indexed-auth-lst (recurse-lst-add-index 1 auth-list '()))
+	 (url (string-append "https://pubmed.ncbi.nlm.nih.gov/" pmid "/"))
+	 (the-body (receive (response-status response-body)
+		       (http-request url) response-body))
+	 (dummy (set! article-count (+ article-count 1)))
+	 (dummy2 (sleep 1))
+	 ;; must test here for the text </a><sup class=\"equal-contrib-container OR </a><sup class=\"affiliation-links\"><spa
+	 ;; if not present, no affiliations, move on
+	 (author-records (if the-body (get-authors-records the-body) #f))
+	 (affils-alist '())
+	 (affils-alist (if author-records (get-affils-alist the-body ) #f))
+	 (author-records2 (if affils-alist (update-contact-records 1 pmid indexed-auth-lst author-records affils-alist '()) #f))
+	;; (author-records3 (if author-records2 (get-missing-email author-records2 '() ) #f))
+	;; (dummy3 (if (null? author-records3) #f (send-email author-records3) ))
+	 )     
+    (pretty-print author-records2)
+    ))
 
-(contact-qname a-contact)
-(find-email "Sun Z")
-(find-fl-aoi "sun Z")
+(define a (get-summaries "1" "3"))
+ (retrieve-article (car a))
+
+(define b (list (make-contact "33919699" 5 "Wang J" "Jingxin Wang" "Jingxin" "Wang" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
+ (make-contact "33919699" 4 "Boskovic ZV" "Zarko V Boskovic" "Zarko" "Boskovic" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
+ (make-contact "33919699" 3 "Pearson ZJ" "Zach J Pearson" "Zach" "Pearson" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
+ (make-contact "33919699" 2 "Zhao J" "Junxing Zhao" "Junxing" "Zhao" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
+ (make-contact "33919699" 1 "Tang Z" "Zhichao Tang" "Zhichao" "Tang" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")))
+
+(get-missing-email (list (cadr b)) '())
