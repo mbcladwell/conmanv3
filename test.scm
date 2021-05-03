@@ -34,36 +34,27 @@ https://pubmed.ncbi.nlm.nih.gov/33906944/  ;;Church GM is last author
 (map first-or-last-auth? (circular-list "Church GM") a)
 
 
-(define (retrieve-article a-summary)
-  ;;this does all the work; author list repeately processed article by article
-  ;;including send email
-  (let* ((pmid (caar a-summary))
-	 (auth-list (cadr a-summary))
-	 (indexed-auth-lst (recurse-lst-add-index 1 auth-list '()))
-	 (url (string-append "https://pubmed.ncbi.nlm.nih.gov/" pmid "/"))
-	 (the-body (receive (response-status response-body)
-		       (http-request url) response-body))
-	 (dummy (set! article-count (+ article-count 1)))
-	 (dummy2 (sleep 1))
-	 ;; must test here for the text </a><sup class=\"equal-contrib-container OR </a><sup class=\"affiliation-links\"><spa
-	 ;; if not present, no affiliations, move on
-	 (author-records (if the-body (get-authors-records the-body) #f))
-	 (affils-alist '())
-	 (affils-alist (if author-records (get-affils-alist the-body ) #f))
-	 (author-records2 (if affils-alist (update-contact-records 1 pmid indexed-auth-lst author-records affils-alist '()) #f))
-	;; (author-records3 (if author-records2 (get-missing-email author-records2 '() ) #f))
-	;; (dummy3 (if (null? author-records3) #f (send-email author-records3) ))
-	 )     
-    (pretty-print author-records2)
-    ))
 
 (define a (get-summaries "1" "3"))
- (retrieve-article (car a))
+(retrieve-article (car a))
 
-(define b (list (make-contact "33919699" 5 "Wang J" "Jingxin Wang" "Jingxin" "Wang" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
  (make-contact "33919699" 4 "Boskovic ZV" "Zarko V Boskovic" "Zarko" "Boskovic" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
  (make-contact "33919699" 3 "Pearson ZJ" "Zach J Pearson" "Zach" "Pearson" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
- (make-contact "33919699" 2 "Zhao J" "Junxing Zhao" "Junxing" "Zhao" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
- (make-contact "33919699" 1 "Tang Z" "Zhichao Tang" "Zhichao" "Tang" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")))
+(make-contact "33919699" 2 "Zhao J" "Junxing Zhao" "Junxing" "Zhao" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
 
-(get-missing-email (list (cadr b)) '())
+(define b (list
+	    (make-contact "33919699" 1 "Tang Z" "Zhichao Tang" "Zhichao" "Tang" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
+	   (make-contact "33919699" 5 "Wang J" "Jingxin Wang" "Jingxin" "Wang" "Department of Medicinal Chemistry, University of Kansas, Lawrence, KS 66047, USA." "null")
+))
+
+
+(pretty-print (get-missing-email   (car b) '()))
+(pretty-print (recurse-get-missing-email b '()))
+
+(pretty-print b)
+(recurse-send-email b)
+
+(pretty-print ref-records)
+(cdr (assoc "33919699" ref-records))
+
+

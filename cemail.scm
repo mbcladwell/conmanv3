@@ -29,6 +29,18 @@
 (define (get-rand-file-name pre suff)
   (string-append "tmp/" pre "-" (number->string (random 10000000000000000000000)) "." suff))
 
+(define (build-sent-list lst text)
+  ;;lst is the list of emails sent (("firstn" . "a")("email" . "ea"))
+  ;;recurse over the list and build the email contents
+  (if (null? (cdr lst))
+      (begin
+	(set! text (string-append text (cdr (assoc  "firstn" (car lst))) " - " (cdr (assoc  "email" (car lst))) "\n"))
+	text)
+      (begin
+	(set! text (string-append text (cdr (assoc  "firstn" (car lst))) " - " (cdr (assoc  "email" (car lst))) "\n"))	
+	(build-sent-list (cdr lst) text))))
+
+
 
 (define (send-custom-email item)
   ;; an item is a list with needed elements from query
@@ -44,8 +56,8 @@
 	 (email (assoc-ref item "email"))
 	 (first-name (if (fname-from-email email) (fname-from-email email)(assoc-ref item "firstn")))
 	 (html-composite (string-append str1 first-name  str2 (assoc-ref item "title") str3 (assoc-ref item "journal") str4 ))
-;;	 (dummy (system "rm tmp/rnd*.txt"))
-;;	 (dummy (system "rm tmp/rnd*.html"))
+	 (dummy (system "rm tmp/rnd*.txt"))
+	 (dummy (system "rm tmp/rnd*.html"))
 	 (html-file-name (get-rand-file-name "rnd" "html"))
 	 (p  (open-output-file html-file-name))
 	 (dummy (begin
@@ -62,7 +74,8 @@
 		  (put-string p2 txt-composite )
 		  (force-output p2)))
 	 (smtp-command (string-append "/home/mbc/bin/smtp-cli --host mail.labsolns.com:587 --subject 'Multi-well plate management software' --enable-auth --user info@labsolns.com --password EKhD8GB48F8wFalt --from info@labsolns.com --to " (assoc-ref item "email") " --bcc info@labsolns.com --body-plain /home/mbc/projects/conmanv3/" txt-file-name " --body-html /home/mbc/projects/conmanv3/" html-file-name " --attach-inline /home/mbc/projects/conmanv3/tmp/las.png"))
-;;	 (dummy (system smtp-command))
+	 ;;comment out the next line for testing
+	;; (dummy (system smtp-command))
 	 )
  
   smtp-command
@@ -74,11 +87,12 @@
   ;; alist is emails that were sent, migt be null
   ;; (list (cons "firstn" firstn)(cons "email" email)) etc loop over to pull out names and emails
   (let* (
-	 (str1 (string-append "Article count: " (assoc-ref "article-count" lst) "\n"))
-	 (str2 (string-append "Author count: " (assoc-ref "author" lst) "\n"))
-	 (str3 (string-append "Author find count: " (assoc-ref "author-find" lst) "\n"))
-	 (str4 (string-append "Elapsed time: " (assoc-ref  "elapsed-time" lst) " minutes.\n\n"))
-	 (txt-composite (string-append str1 str2 str3 str4 ))
+	 (str1 (string-append "Article count: " (cdr (assoc "article" lst)) "\n"))
+	 (str2 (string-append "Author count: " (cdr (assoc "author" lst)) "\n"))
+	 (str3 (string-append "Author find count: " (cdr (assoc "author-find" lst)) "\n"))
+	 (str4 (string-append "Elapsed time: " (cdr (assoc  "elapsed-time" lst)) " minutes.\n\n"))
+	 (str5 (build-sent-list alist ""))
+	 (txt-composite (string-append str1 str2 str3 str4 str5))
 	 (txt-file-name (get-rand-file-name "rnd" "txt"))
 	 (p2  (open-output-file txt-file-name))
 	 (dummy (begin
@@ -87,5 +101,6 @@
 	 (smtp-command (string-append "/home/mbc/bin/smtp-cli --host mail.labsolns.com:587 --subject 'Summary for batch " (assoc-ref lst "batchid") "' --enable-auth --user info@labsolns.com --password EKhD8GB48F8wFalt --from info@labsolns.com --to info@labsolns.com --body-plain /home/mbc/projects/conmanv3/" txt-file-name ))
 	 (dummy (system smtp-command))
 	 )
-  #f
+    #f
+  
   ))

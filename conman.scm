@@ -189,7 +189,7 @@
       (let* ((url (string-append "https://pubmed.ncbi.nlm.nih.gov/" (car pmid-list) "/"))
 	     (the-body (receive (response-status response-body)
 			   (http-request url) response-body))
-	     (dummy (sleep 1))
+	     (dummy (sleep 2))
 	     (coord-start (string-match "<div class=\"affiliations\">" the-body ))
 	     (coord-end (string-match " <ul class=\"identifiers\" id=\"full-view-identifiers\">" the-body ))
 	     (affil-chunk (if coord-start (xsubstring the-body (match:start coord-start) (match:start coord-end)) #f))
@@ -276,10 +276,9 @@
 
 
 
-(define (update-contact-records counter pmid auth-list authors affils auth-out)
+(define (update-contact-records counter pmid auth-list the-contact affils auth-out)
   ;;fill missing fields pmid, index, qname using the passed in, indexed auth-list
-  (if (null? (cdr authors))
-      (let* ((the-contact (car authors))
+      (let* (
 	     (affil-id (contact-affil the-contact)) ;;what I need
 	     (affil-list (assoc affil-id affils))
 	     (affil (cadr affil-list))
@@ -291,21 +290,48 @@
 	     (dummy (set-contact-qname! the-contact (cdr (assoc counter auth-list))))
 	     (dummy (set! auth-out (cons the-contact auth-out)))
 	     )
-	auth-out)
-      (let* ((the-contact (car authors))
-	     (affil-id (contact-affil the-contact)) ;;what I need
-	     (affil-list (assoc affil-id affils))
-	     (affil (cadr affil-list))
-	     (email (caddr affil-list))
-	     (dummy (set-contact-affil! the-contact affil))
-	     (dummy (set-contact-email! the-contact email))
-	     (dummy (set-contact-pmid! the-contact pmid))
-	     (dummy (set-contact-index! the-contact counter))
-	     (dummy (set-contact-qname! the-contact (cdr (assoc counter auth-list))))
-	     (dummy (set! auth-out (cons the-contact auth-out)))
-	     (counter (+ counter 1))
-	     )
-	(update-contact-records counter  pmid auth-list (cdr authors) affils auth-out))))
+	 auth-out))
+
+(define (recurse-update-contact-records counter pmid auth-list authors affils auth-out)
+  ;;fill missing fields pmid, index, qname using the passed in, indexed auth-list
+(if (null? (cdr authors)) 
+    (update-contact-records counter  pmid auth-list (car authors) affils auth-out)     
+    (let* ((a (update-contact-records counter  pmid auth-list (car authors) affils auth-out))
+	   (counter (+ counter 1)))
+      (recurse-update-contact-records counter pmid auth-list (cdr authors) affils a))))
+
+
+
+;; (define (update-contact-records counter pmid auth-list authors affils auth-out)
+;;   ;;fill missing fields pmid, index, qname using the passed in, indexed auth-list
+;;   (if (null? (cdr authors))
+;;       (let* ((the-contact (car authors))
+;; 	     (affil-id (contact-affil the-contact)) ;;what I need
+;; 	     (affil-list (assoc affil-id affils))
+;; 	     (affil (cadr affil-list))
+;; 	     (email (caddr affil-list))
+;; 	     (dummy (set-contact-affil! the-contact affil))
+;; 	     (dummy (set-contact-email! the-contact email))
+;; 	     (dummy (set-contact-pmid! the-contact pmid))
+;; 	     (dummy (set-contact-index! the-contact counter))
+;; 	     (dummy (set-contact-qname! the-contact (cdr (assoc counter auth-list))))
+;; 	     (dummy (set! auth-out (cons the-contact auth-out)))
+;; 	     )
+;; 	auth-out)
+;;       (let* ((the-contact (car authors))
+;; 	     (affil-id (contact-affil the-contact)) ;;what I need
+;; 	     (affil-list (assoc affil-id affils))
+;; 	     (affil (cadr affil-list))
+;; 	     (email (caddr affil-list))
+;; 	     (dummy (set-contact-affil! the-contact affil))
+;; 	     (dummy (set-contact-email! the-contact email))
+;; 	     (dummy (set-contact-pmid! the-contact pmid))
+;; 	     (dummy (set-contact-index! the-contact counter))
+;; 	     (dummy (set-contact-qname! the-contact (cdr (assoc counter auth-list))))
+;; 	     (dummy (set! auth-out (cons the-contact auth-out)))
+;; 	     (counter (+ counter 1))
+;; 	     )
+;; 	(update-contact-records counter  pmid auth-list (cdr authors) affils auth-out))))
 
 
 
@@ -419,10 +445,8 @@
     ;;			  (pretty-print proceed-flag)))
     auth-v)
   )
-
-
 (define (retrieve-article a-summary)
-  ;;this does all the work; author list repeately processed article by article
+  ;;this does all the work; summary list repeately processed article by article
   ;;including send email
   (let* ((pmid (caar a-summary))
 	 (auth-list (cadr a-summary))
@@ -436,16 +460,17 @@
 	 ;; if not present, no affiliations, move on
 	 (author-records (if the-body (get-authors-records the-body) #f))
 	 (affils-alist '())
-	 (affils-alist (if author-records (get-affils-alist the-body ) #f))
-	 (author-records2 (if affils-alist (update-contact-records 1 pmid indexed-auth-lst author-records affils-alist '()) #f))
-	 (author-records3 (if author-records2 (get-missing-email author-records2 '() ) #f))
-	 (dummy3 (if (null? author-records3) #f (send-email author-records3) ))
+	 (affils-alist (if (null? author-records) #f (get-affils-alist the-body )))
+	 (author-records2 (if (null? affils-alist) #f (recurse-update-contact-records 1 pmid indexed-auth-lst author-records affils-alist '())))
+	 (author-records3 (if (null? author-records2) #f (recurse-get-missing-email author-records2 '())))
+	 (dummy4 (if (null? author-records3) #f (recurse-send-email author-records3) ))
 	 )     
+    ;;(pretty-print author-records3)
     #f
     ))
 
 
-;;(pretty-print (retrieve-article "32781280"))
+;;(pretty-print (retrieve-article "33919699"))
 
 
 ;; provides a list of articles.  One article looks like:
@@ -555,11 +580,11 @@
     (make-ref-records b f d )))
 
 
-(define (get-missing-email contacts  contacts-out)
+(define (get-missing-email the-contact contacts-out)
   ;;input: contact records with all info but maybe email is missing
   ;;if email is missing find it
   ;;I will also count contacts in this method
-      (let* ((the-contact (car contacts))
+      (let* (
 	     (email (contact-email the-contact))
 	     (email-null?   (string=? "null" email))
 	     (deplorables '( "Pfizer" "China"))
@@ -574,35 +599,19 @@
 	contacts-out))
 
 
-
-(define (recurse-get-missing-email contacts  contacts-out)
+(define (recurse-get-missing-email contacts contacts-out)
   ;;input: contact records with all info but maybe email is missing
-  ;;if email is missing find it
-  ;;I will also count contacts in this method
-  (if (null? (cdr contacts))
-      (get-missing-email (cdr contacts)  contacts-out)
-      (let* ((the-contact (car contacts))
-	     (email (contact-email the-contact))
-	     (email-null?   (string=? "null" email))
-	     (deplorables '( "Pfizer" "China"))
-	     (affil (contact-affil the-contact))
-	     (ok-affiliation? (not (any-not-false? (map string-contains-ci (circular-list affil) deplorables))))
-	     (auth-name (contact-qname the-contact))
-	     (new-email (if (and email-null?  ok-affiliation?) (find-email auth-name) email))
-	     (dummy (set! author-count (+ author-count 1)))
-	     (dummy (set-contact-email! the-contact new-email))
-	     (dummy (set! contacts-out (cons the-contact contacts-out)))
-	     )
-	(get-missing-email (cdr contacts)  contacts-out))))
-
-
-
-;; (define (get-missing-email contacts  contacts-out)
+  (if (null? (cdr contacts))     
+	(get-missing-email (car contacts) contacts-out )   
+	(recurse-get-missing-email (cdr contacts)
+				   (get-missing-email (car contacts) contacts-out))))
+	
+	
+;; (define (get-missing-email the-contact  contacts-out)
 ;;   ;;input: contact records with all info but maybe email is missing
 ;;   ;;if email is missing find it
 ;;   ;;I will also count contacts in this method
-;;   (if (null? (cdr contacts))
-;;       (let* ((the-contact (car contacts))
+;;       (let* (
 ;; 	     (email (contact-email the-contact))
 ;; 	     (email-null?   (string=? "null" email))
 ;; 	     (deplorables '( "Pfizer" "China"))
@@ -614,65 +623,53 @@
 ;; 	     (dummy (set-contact-email! the-contact new-email))
 ;; 	     (dummy (set! contacts-out (cons the-contact contacts-out)))
 ;; 	     )
-;; 	contacts-out)
-;;       (let* ((the-contact (car contacts))
-;; 	     (email (contact-email the-contact))
-;; 	     (email-null?   (string=? "null" email))
-;; 	     (deplorables '( "Pfizer" "China"))
-;; 	     (affil (contact-affil the-contact))
-;; 	     (ok-affiliation? (not (any-not-false? (map string-contains-ci (circular-list affil) deplorables))))
-;; 	     (auth-name (contact-qname the-contact))
-;; 	     (new-email (if (and email-null?  ok-affiliation?) (find-email auth-name) email))
-;; 	     (dummy (set! author-count (+ author-count 1)))
-;; 	     (dummy (set-contact-email! the-contact new-email))
-;; 	     (dummy (set! contacts-out (cons the-contact contacts-out)))
+;; 	contacts-out))
+
+
+
+;; (define (recurse-get-missing-email contacts  contacts-out)
+;;   ;;input: contact records with all info but maybe email is missing
+;;   (if (null? (cdr contacts))   
+;;       (get-missing-email (car contacts)  contacts-out)
+;;       (let* ((a (get-missing-email (car contacts)  contacts-out))
 ;; 	     )
-;; 	(get-missing-email (cdr contacts)  contacts-out))))
+;; 	(recurse-get-missing-email (cdr contacts) a))))
 
 
-(define (send-email lst)
-  ;;lst is the list of contact records
-  ;;recurse over the contacts list and send an email if email is not null
+(define (send-email a-contact)
   ;;the ref records have journal and title info, search with pmid
   ;;input to cemail is an alist:
   ;; (("email" . "Leen.Delang@kuleuven.be")
   ;;  ("journal" . "Microorganisms")
   ;;  ("title" . "Repurposing Drugs for Mayaro Virus: Identification.... Inhibitors.")
   ;;  ("firstn" . "Rana"))
-
-  (if (null? (cdr lst))
-      (let* ((contact (car lst))
-	     (email (contact-email contact))
-	     (firstn (contact-email contact) )
-	     (pmid (contact-pmid contact))
-	     (ref (assoc pmid ref-records))
-	     (title (reference-title ref))
-	     (journal (reference-journal ref))
-	     (the-list (list (cons "email" email)(cons "journal" journal)(cons "title" title)(cons "firstn" firstn)))
-	     (for-report (list (cons "firstn" firstn)(cons "email" email))))
-	(if (equal? email "null") #f
-	    (begin
-	      (send-custom-email the-list)
-	      (set! emails-sent (cons for-report emails-sent)))))
-      (let* ((contact (car lst))
-	    (email (contact-email contact))
-	    (firstn (contact-email contact) )
-	    (pmid (contact-pmid contact))
+      (let* (
+	    (email (contact-email a-contact))
+	    (firstn (contact-firstn a-contact) )
+	    (pmid (contact-pmid a-contact))
 	    (ref (assoc pmid ref-records))
-	    (title (reference-title ref))
-	    (journal (reference-journal ref))
+	    (title (reference-title (cdr ref)))
+	    (journal (reference-journal (cdr ref)))
 	    (the-list (list (cons "email" email) (cons "journal" journal)(cons "title" title)(cons "firstn" firstn)))
 	    (for-report (list (cons "firstn" firstn)(cons "email" email)))
 	    (dummy (if (equal? email "null") #f
 		       (begin
 			 (send-custom-email the-list)
 			 (set! emails-sent (cons for-report emails-sent))))))
-	(send-email (cdr lst)))))
+	#f))
+
+
+(define (recurse-send-email lst)
+  ;;lst is the list of contact records
+  ;;recurse over the contacts list and send an email if email is not null
+  (if (null? (cdr lst))
+      (send-email (car lst))
+      (begin
+	(send-email (car lst))
+	(recurse-send-email (cdr lst)))))
 
 
 
-
-;; (pretty-print (map-over-summaries one-summary))
 
 
 (define (main args)
@@ -687,9 +684,9 @@
 	 (dummy4 (log-msg 'INFO (string-append "Article-count: " (number->string  article-count) )))
 	 (dummy5 (log-msg 'INFO (string-append "Author-count: " (number->string  author-count) )))
 	 (dummy6 (log-msg 'INFO (string-append "Author-find-email-count: " (number->string  author-find-email-count) )))
-	 (dummy7 (shutdown-logging))
 	 (stats-list (list (cons "batchid" batch-id) (cons "article" (number->string article-count)) (cons "author" (number->string author-count)) (cons "author-find" (number->string author-find-email-count)) (cons "elapsed-time" (number->string elapsed-time))))
-	 (dummy8 (send-report stats-list  emails-sent)) 
+	 (dummy7 (send-report stats-list  emails-sent))
+	 (dummy8 (shutdown-logging))
 	 )
 ;;   (pretty-print b)))    
    (pretty-print (string-append "Elapsed time: " (number->string  elapsed-time) " minutes." ))))
