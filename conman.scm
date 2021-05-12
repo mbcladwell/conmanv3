@@ -237,8 +237,8 @@
 (define (get-summaries reldate retmax)
   ;; this is the initializing method
   (let*((db "pubmed")
-	;;(query (string-append "96+multi+well+OR+high-throughput+screening+assay+(" (uri-encode two-weeks-ago) "[epdat])"))
-	(query (string-append "96+multi+well+OR+high-throughput+screening+assay+(2021%2F04%2F14[epdat])"))
+	(query (string-append "96+multi+well+OR+high-throughput+screening+assay+(" (uri-encode two-weeks-ago) "[epdat])"))
+	;;(query (string-append "96+multi+well+OR+high-throughput+screening+assay+(2021%2F04%2F14[epdat])"))
 	
 	(base "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/")
 	;; (define url (string-append base  "esearch.fcgi?db=" db "&term=" query "&usehistory=y"))

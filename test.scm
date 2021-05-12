@@ -11,10 +11,30 @@ https://pubmed.ncbi.nlm.nih.gov/32781280/
 
 https://pubmed.ncbi.nlm.nih.gov/33906944/  ;;Church GM is last author
 
+ 586:17  7 (map1 ((("33892103") ("Ivanenkov YA" "Yu Filyae…" …)) …))
+In /home/mbc/projects/conmanv3/./conman.scm:
+   465:57  6 (retrieve-article _)
+   607:35  5 (recurse-get-missing-email _ _)
+   594:63  4 (get-missing-email #<<contact> pmid: "33892103" index:…> …)
+   211:19  3 (find-email "Vakhitova JV")
+   171:14  2 (find-fl-aoi "Vakhitova JV")
+In srfi/srfi-1.scm:
+   603:19  1 (map2 ("Vakhitova JV" "Vakhitova JV" "Vakhitova JV" . #) …)
+In /home/mbc/projects/conmanv3/./conman.scm:
+   154:20  0 (first-or-last-auth? "Vakhitova JV" _)
 
-(define a (get-summaries "1" "3"))
+/home/mbc/projects/conmanv3/./conman.scm:154:20: In procedure first-or-last-auth?:
+In procedure car: Wrong type argument in position 1 (expecting pair): ()
+
+
+(define a (get-summaries "1" "30"))
 (define b (map retrieve-article a))
-(pretty-print b)
+(pretty-print a)
+
+(define g  (find-email "Vakhitova JV"))
+(define h (get-articles-for-auth "Vakhitova JV"))
+(define i (map first-or-last-auth? (circular-list "Vakhitova JV") h))
+(define j (find-fl-aoi "Vakhitova JV"))
 
 
 (get-missing-email (list a-contact) '())
