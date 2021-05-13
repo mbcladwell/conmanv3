@@ -280,10 +280,10 @@
   ;;fill missing fields pmid, index, qname using the passed in, indexed auth-list
       (let* (
 	     (affil-id (contact-affil the-contact)) ;;what I need
-	     (affil-list (assoc affil-id affils))
-	     (affil (cadr affil-list))
-	     (email (caddr affil-list))
-	     (dummy (set-contact-affil! the-contact affil))
+	     (affil-list (if affil-id (assoc affil-id affils) #f))
+	     (affil (if  affil-list (cadr affil-list) "null"))
+	     (email (if  affil-list (caddr affil-list) "null"))
+	     (dummy (if  affil (set-contact-affil! the-contact affil) #f))
 	     (dummy (set-contact-email! the-contact email))
 	     (dummy (set-contact-pmid! the-contact pmid))
 	     (dummy (set-contact-index! the-contact counter))
@@ -339,29 +339,44 @@
   ;; pulls out a single author
   (make-regexp "data-ga-label=[a-zA-Z0-9~_+=,.:;'()//&#@<>/\" -]+</a></sup><span" regexp/extended))
 
+(define (get-coords lst)
+  ;;expecting a 3 element list
+  (let* ((a (if (car lst) (list (+ (match:start (car lst)) 1)(- (match:end (car lst)) 39)) #f))
+	 (b (if (cadr lst) (list (+ (match:start (cadr lst)) 1)(- (match:end (cadr lst)) 39)) #f))
+	 (c (if (caddr lst) (list (+ (match:start (caddr lst)) 1)(- (match:end (caddr lst)) 11)) #f)))
+    (if a a (if b b (if c c #f)))))
+
+
+
 (define (extract-authors achunk)
   ;; If there are equal contributors, a different string search strategy is needed
   ;; the string extraction is such that either method extracts the same coordinates
   (let* (   
-	 (name-vec  (if (string-match "equal-contrib-container" achunk )
-			(string-match ">[-a-zA-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜƏƒƠơƯƯǺǻǼǽǾǿńŻć0-9<>~_+=,.:;()&#@\" ]+</a><sup class=\"equal-contrib-container"  achunk)
-			(string-match ">[-a-zA-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜƏƒƠơƯƯǺǻǼǽǾǿńŻć0-9<>~_+=,.:;()&#@\" ]+</a><sup class=\"affiliation-links\"><spa"  achunk)
-			))		    
-	 (full-name (xsubstring achunk (+ (match:start name-vec) 1)(- (match:end name-vec) 39))) ;;;39
-	(name-num-sp (string-count full-name #\sp))
-	 (first-sp (string-contains full-name " "))
-	 (second-sp (if (> name-num-sp 1) (string-contains full-name " " (+ first-sp 1)) #f))
-	 (third-sp (if (> name-num-sp 2) (string-contains full-name " " (+ second-sp 1)) #f))
-	 (first (if (or (= name-num-sp  1) (= name-num-sp  2)) (xsubstring full-name 0  first-sp )  "null"  ))	 
-	 (last (cond ((= name-num-sp 3) (xsubstring full-name (+ third-sp 1) (string-length full-name)))
-		     ((= name-num-sp 2) (xsubstring full-name (+ second-sp 1) (string-length full-name)))
-	  	     ((= name-num-sp 1) (xsubstring full-name (+ first-sp 1) (string-length full-name)))
-	 	     ((= name-num-sp 0) full-name)))
-	 (affiliation-pre (string-match ">\n *[0-9]+\n *<" achunk) )
-	 (affiliation (string-trim-both (xsubstring (match:string affiliation-pre) (+ (match:start affiliation-pre) 1)(- (match:end affiliation-pre) 1))))
+	 ;; (name-vec  (if (string-match "equal-contrib-container" achunk )
+	 ;; 		(string-match ">[-a-zA-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜƏƒƠơƯƯǺǻǼǽǾǿńŻć0-9<>~_+=,.:;()&#@\" ]+</a><sup class=\"equal-contrib-container"  achunk)
+	 ;; 		(string-match ">[-a-zA-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜƏƒƠơƯƯǺǻǼǽǾǿńŻć0-9<>~_+=,.:;()&#@\" ]+</a><sup class=\"affiliation-links\"><spa"  achunk)
+	 ;; 		))
+	 (coords  (get-coords
+		   (list (string-match (string-append ">[" all-chars "]+</a><sup class=\"equal-contrib-container")  achunk)			  
+		      (string-match (string-append ">[" all-chars "]+</a><sup class=\"affiliation-links\"><spa")  achunk)
+		      (string-match (string-append ">[" all-chars "]+</a></span>")  achunk)
+			
+			)))	
+	  (full-name (xsubstring achunk (car coords) (cadr coords)))
+	   (name-num-sp (string-count full-name #\sp))
+	   (first-sp (string-contains full-name " "))
+	  (second-sp (if (> name-num-sp 1) (string-contains full-name " " (+ first-sp 1)) #f))
+	  (third-sp (if (> name-num-sp 2) (string-contains full-name " " (+ second-sp 1)) #f))
+	  (first (if (or (= name-num-sp  1) (= name-num-sp  2)) (xsubstring full-name 0  first-sp )  "null"  ))	 
+	  (last (cond ((= name-num-sp 3) (xsubstring full-name (+ third-sp 1) (string-length full-name)))
+	  	     ((= name-num-sp 2) (xsubstring full-name (+ second-sp 1) (string-length full-name)))
+	   	     ((= name-num-sp 1) (xsubstring full-name (+ first-sp 1) (string-length full-name)))
+	  	     ((= name-num-sp 0) full-name)))
+	  (affiliation-pre (string-match ">\n *[0-9]+\n *<" achunk) )
+	  (affiliation (if affiliation-pre (string-trim-both (xsubstring (match:string affiliation-pre) (+ (match:start affiliation-pre) 1)(- (match:end affiliation-pre) 1))) #f))
 	 ;;(a-contact (make-contact "" "" "" full-name  first last affiliation ""))
 	 )
-   ;; (pretty-print affiliation)
+  ;;  (pretty-print affiliation-pre)
    (make-contact "" "" "" full-name  first last affiliation "")
     ))
 
@@ -445,6 +460,7 @@
     ;;			  (pretty-print proceed-flag)))
     auth-v)
   )
+
 (define (retrieve-article a-summary)
   ;;this does all the work; summary list repeately processed article by article
   ;;including send email
