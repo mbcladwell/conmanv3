@@ -234,6 +234,25 @@
 	 (d (xsubstring x (+ (match:start c) 4) (- (match:end c) 5))))
     (cons (list d) (list b))))
 
+
+(define (remove-italicization x)
+  ;;x is a  DocSum
+  (let* ((a (regexp-substitute/global #f "&lt;i&gt;"  x 'pre "" 'post)))
+ (regexp-substitute/global #f "&lt;/i&gt;"  a 'pre "" 'post)))
+
+
+(define (recurse-remove-italicization inlst outlst)
+  ;;inlst is a list of extracted DocSums
+  ;;outlst is the cleaned list
+    (if (null? (cdr inlst))
+      (begin
+	(set! outlst (cons (remove-italicization (car inlst)) outlst))
+	outlst)
+      (begin
+	(set! outlst (cons (remove-italicization (car inlst)) outlst))
+	(recurse-remove-italicization (cdr inlst) outlst))))
+
+
 (define (get-summaries reldate retmax)
   ;; this is the initializing method
   (let*((db "pubmed")
@@ -247,7 +266,7 @@
 			(http-request url) response-body))
 	(dummy (sleep 1))
         (all-ids-pre   (map match:substring  (list-matches "<Id>[0-9]+</Id>" the-body ) ))
-	(d (if (not (null? all-ids-pre))
+	(e (if (not (null? all-ids-pre))
 	       (let* ((all-ids (map (lambda (x) (string-append (xsubstring x 4 12) ",")) all-ids-pre))
 		      (all-ids-concat (string-concatenate all-ids))
 		      (all-ids-concat (xsubstring all-ids-concat 0 (- (string-length all-ids-concat) 1)))
@@ -257,15 +276,16 @@
 					   (http-request summary-url) response-body))
 		      (b (find-occurences-in-string "<DocSum>" all-summaries))
 		      (c (map (lambda (x) (substring all-summaries (car x) (cdr x))) b))
+		      (d (recurse-remove-italicization c '()))
 		      ;; this is where I will insert the ref table processing
 		      ;; this creates ref-records, an a-list of references
-		      (dummy (get-pmid-jrn-title c))
-		      )
-		 (map get-id-authors c)
+		      (dummy (get-pmid-jrn-title d))
+		      ) 
+		 (map get-id-authors d)
 		 )		      
                '() ))  )
-  ;;  (pretty-print d)))
-   d))
+  ;;  (pretty-print e)))
+   e))
 
 ;; (pretty-print (get-summaries "40" "3"))
 
@@ -562,6 +582,14 @@
             (set! results (append  results (list (xsubstring (match:string (caar lst) )  (+ (match:start (caar lst)) 33) (- (match:end (caar lst)) 7) )))))
 	(process-vec-title (cdr lst) results))))
 
+
+
+;; (define (get-title-search-string pmid-chunck)
+;;   ;;test 2 options and return the one that worked
+;;   (let* ((a (string-append "<Item Name=\"Title\" Type=\"String\">[" all-chars  "]+</Item>"))
+;; 	 (b (string-append "<Item Name=\"Title\" Type=\"String\">[" all-chars  "]+</Item>")
+;; 	 (c (if (caddr lst) (list (+ (match:start (caddr lst)) 1)(- (match:end (caddr lst)) 11)) #f)))
+;;     (if a a (if b b (if c c #f)))))
 
 
 

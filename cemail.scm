@@ -75,7 +75,7 @@
 		  (force-output p2)))
 	 (smtp-command (string-append "/home/mbc/bin/smtp-cli --host mail.labsolns.com:587 --subject 'Multi-well plate management software' --enable-auth --user info@labsolns.com --password EKhD8GB48F8wFalt --from info@labsolns.com --to " (assoc-ref item "email") " --bcc info@labsolns.com --body-plain /home/mbc/projects/conmanv3/" txt-file-name " --body-html /home/mbc/projects/conmanv3/" html-file-name " --attach-inline /home/mbc/projects/conmanv3/tmp/las.png"))
 	 ;;comment out the next line for testing
-	 (dummy (system smtp-command))
+	;; (dummy (system smtp-command))
 	 )
  
   smtp-command
