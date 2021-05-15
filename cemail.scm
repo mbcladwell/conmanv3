@@ -75,7 +75,7 @@
 		  (force-output p2)))
 	 (smtp-command (string-append "/home/mbc/bin/smtp-cli --host mail.labsolns.com:587 --subject 'Multi-well plate management software' --enable-auth --user info@labsolns.com --password EKhD8GB48F8wFalt --from info@labsolns.com --to " (assoc-ref item "email") " --bcc info@labsolns.com --body-plain /home/mbc/projects/conmanv3/" txt-file-name " --body-html /home/mbc/projects/conmanv3/" html-file-name " --attach-inline /home/mbc/projects/conmanv3/tmp/las.png"))
 	 ;;comment out the next line for testing
-	;; (dummy (system smtp-command))
+	 (dummy (system smtp-command))
 	 )
  
   smtp-command
@@ -91,7 +91,7 @@
 	 (str2 (string-append "Author count: " (cdr (assoc "author" lst)) "\n"))
 	 (str3 (string-append "Author find count: " (cdr (assoc "author-find" lst)) "\n"))
 	 (str4 (string-append "Elapsed time: " (cdr (assoc  "elapsed-time" lst)) " minutes.\n\n"))
-	 (str5 (build-sent-list alist ""))
+	 (str5 (if (null?  alist) "null" (build-sent-list alist "")))
 	 (txt-composite (string-append str1 str2 str3 str4 str5))
 	 (txt-file-name (get-rand-file-name "rnd" "txt"))
 	 (p2  (open-output-file txt-file-name))
