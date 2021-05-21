@@ -235,10 +235,13 @@
     (cons (list d) (list b))))
 
 
-(define (remove-italicization x)
+(define (remove-italicization x)  ;;and other strange characters
   ;;x is a  DocSum
-  (let* ((a (regexp-substitute/global #f "&lt;i&gt;"  x 'pre "" 'post)))
- (regexp-substitute/global #f "&lt;/i&gt;"  a 'pre "" 'post)))
+  (let* ((a (regexp-substitute/global #f "&lt;i&gt;"  x 'pre "" 'post))
+	 (b (regexp-substitute/global #f "&lt;/i&gt;"  a 'pre "" 'post))
+	 (c (regexp-substitute/global #f "&lt"  b 'pre "" 'post))	 
+	 )
+ (regexp-substitute/global #f "&gt;"  c 'pre "" 'post)))
 
 
 (define (recurse-remove-italicization inlst outlst)
