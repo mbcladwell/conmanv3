@@ -1,0 +1,6 @@
+Article count: 0
+Author count: 0
+Author find count: 0
+Elapsed time: 1 minutes.
+
+null
