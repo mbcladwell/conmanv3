@@ -1,8 +1,8 @@
-#! /gnu/store/q8brh7j5mwy0hbrly6hjb1m3wwndxqc8-guile-3.0.5/bin/guile \
--e main -s
-!#
+;;#! /gnu/store/q8brh7j5mwy0hbrly6hjb1m3wwndxqc8-guile-3.0.5/bin/guile \
+;;-e main -s
+;;!#
 
- (add-to-load-path "/home/mbc/projects")
+ ;;(add-to-load-path "/home/mbc/projects")
 
 ;; (add-to-load-path "/home/admin/projects")
 
@@ -740,3 +740,4 @@
    
 ;; (main '( "" "1" "3"))
 
+;; cd /home/mbc/projects/conmanv3 &&  guix environment --manifest=manifest.scm -- guile -L /home/mbc/projects -e main -s ./conman.scm 1 30

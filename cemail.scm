@@ -1,8 +1,8 @@
-#!/usr/bin/guile \
--e main -s
-!#
+;;#!/usr/bin/guile \
+;;-e main -s
+;;!#
 ;; Retrieve rows from mysql and process each row by sending a custom email
- (add-to-load-path "/home/mbc/projects")
+;; (add-to-load-path "/home/mbc/projects")
 
  (define-module (conmanv3 cemail)
    #:export (send-report
@@ -73,9 +73,9 @@
 	 (dummy (begin
 		  (put-string p2 txt-composite )
 		  (force-output p2)))
-	 (smtp-command (string-append "/home/mbc/bin/smtp-cli --host mail.labsolns.com:587 --subject 'Multi-well plate management software' --enable-auth --user info@labsolns.com --password EKhD8GB48F8wFalt --from info@labsolns.com --to " (assoc-ref item "email") " --bcc info@labsolns.com --body-plain /home/mbc/projects/conmanv3/" txt-file-name " --body-html /home/mbc/projects/conmanv3/" html-file-name " --attach-inline /home/mbc/projects/conmanv3/tmp/las.png"))
+	 (smtp-command (string-append "./bin/smtp-cli --host mail.labsolns.com:587 --subject 'Multi-well plate management software' --enable-auth --user info@labsolns.com --password EKhD8GB48F8wFalt --from info@labsolns.com --to " (assoc-ref item "email") " --bcc info@labsolns.com --body-plain ./" txt-file-name " --body-html ./" html-file-name " --attach-inline ./tmp/las.png"))
 	 ;;comment out the next line for testing
-	 (dummy (system smtp-command))
+	 ;;(dummy (system ./bin/smtp-command))
 	 )
  
   smtp-command
@@ -98,7 +98,7 @@
 	 (dummy (begin
 		  (put-string p2 txt-composite )
 		  (force-output p2)))
-	 (smtp-command (string-append "/home/mbc/bin/smtp-cli --host mail.labsolns.com:587 --subject 'Summary for batch " (assoc-ref lst "batchid") "' --enable-auth --user info@labsolns.com --password EKhD8GB48F8wFalt --from info@labsolns.com --to info@labsolns.com --body-plain /home/mbc/projects/conmanv3/" txt-file-name ))
+	 (smtp-command (string-append "./bin/smtp-cli --host mail.labsolns.com:587 --subject 'Summary for batch " (assoc-ref lst "batchid") "' --enable-auth --user info@labsolns.com --password EKhD8GB48F8wFalt --from info@labsolns.com --to info@labsolns.com --body-plain ./" txt-file-name ))
 	 (dummy (system smtp-command))
 	 )
     #f
