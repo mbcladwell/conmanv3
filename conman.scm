@@ -4,7 +4,7 @@
 
  ;;(add-to-load-path "/home/mbc/projects")
 
-;; (add-to-load-path "/home/admin/projects")
+ ;;(add-to-load-path "/home/admin/projects")
 
 (use-modules (web client)
 	     (srfi srfi-19)   ;; date time
@@ -362,28 +362,26 @@
   ;; pulls out a single author
   (make-regexp "data-ga-label=[a-zA-Z0-9~_+=,.:;'()//&#@<>/\" -]+</a></sup><span" regexp/extended))
 
+
 (define (get-coords lst)
-  ;;expecting a 3 element list
+  ;;expecting a 4 element list
   (let* ((a (if (car lst) (list (+ (match:start (car lst)) 1)(- (match:end (car lst)) 39)) #f))
 	 (b (if (cadr lst) (list (+ (match:start (cadr lst)) 1)(- (match:end (cadr lst)) 39)) #f))
-	 (c (if (caddr lst) (list (+ (match:start (caddr lst)) 1)(- (match:end (caddr lst)) 11)) #f)))
-    (if a a (if b b (if c c #f)))))
-
+	 (c (if (caddr lst) (list (+ (match:start (caddr lst)) 1)(- (match:end (caddr lst)) 11)) #f))
+	 (d (if (cadddr lst) (list (+ (match:start (cadddr lst)) 1)(- (match:end (cadddr lst)) 0)) #f))
+	 )
+    (if a a (if b b (if c c (if d d #f))))))
 
 
 (define (extract-authors achunk)
   ;; If there are equal contributors, a different string search strategy is needed
   ;; the string extraction is such that either method extracts the same coordinates
   (let* (   
-	 ;; (name-vec  (if (string-match "equal-contrib-container" achunk )
-	 ;; 		(string-match ">[-a-zA-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜƏƒƠơƯƯǺǻǼǽǾǿńŻć0-9<>~_+=,.:;()&#@\" ]+</a><sup class=\"equal-contrib-container"  achunk)
-	 ;; 		(string-match ">[-a-zA-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſǍǎǏǐǑǒǓǔǕǖǗǘǙǚǛǜƏƒƠơƯƯǺǻǼǽǾǿńŻć0-9<>~_+=,.:;()&#@\" ]+</a><sup class=\"affiliation-links\"><spa"  achunk)
-	 ;; 		))
 	 (coords  (get-coords
 		   (list (string-match (string-append ">[" all-chars "]+</a><sup class=\"equal-contrib-container")  achunk)			  
 		      (string-match (string-append ">[" all-chars "]+</a><sup class=\"affiliation-links\"><spa")  achunk)
 		      (string-match (string-append ">[" all-chars "]+</a></span>")  achunk)
-			
+		      (string-match (string-append "</a><span class=\"comma\">") achunk )			
 			)))	
 	  (full-name (xsubstring achunk (car coords) (cadr coords)))
 	   (name-num-sp (string-count full-name #\sp))
